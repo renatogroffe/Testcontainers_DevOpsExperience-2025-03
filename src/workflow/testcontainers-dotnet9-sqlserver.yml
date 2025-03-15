@@ -1,0 +1,53 @@
+name: testcontainers-dotnet9-sqlserver
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    env:
+      Path_Tests: './src/BenchmarkingDapperEFCoreCRMSqlServer'
+      Path_ArtifactsBenchmarking: './src/BenchmarkingDapperEFCoreCRMSqlServer/BenchmarkDotNet.Artifacts/results'
+      ArtifactBenchmarkingHtml: 'BenchmarkingDapperEFCoreCRMSqlServer.Tests.CRMTests-report.html'
+      ArtifactBenchmarkingMarkdown: 'BenchmarkingDapperEFCoreCRMSqlServer.Tests.CRMTests-report-github.md'
+      NumeroContatosPorCompanhia: '2'
+  
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar uso do .NET 9
+        uses: actions/setup-dotnet@v3.3.1
+        with:
+          dotnet-version: 9.0.x                
+
+      - name: Exibir versao atual do .NET
+        run: dotnet --version
+
+      - name: Executar benchmarking com testes de performance - Entity Framework Core x Dapper x ADO x Dapper.Contrib
+        run: |
+          cd ${{ env.Path_Tests }}
+          ls
+          dotnet run --filter BenchmarkingDapperEFCoreCRMSqlServer.Tests.* -c Release
+
+      - name: Exibir containers apos 20 segundos
+        run: |
+          sleep 20s
+          docker ps -a
+
+      - name: Upload do relatorio HTML com resultados
+        uses: actions/upload-artifact@v4.6.1
+        with:
+          name: 'benchmark-html'
+          path: ${{ env.Path_ArtifactsBenchmarking }}/${{ env.ArtifactBenchmarkingHtml }}
+
+      - name: Upload do relatorio Markdown com resultados
+        uses: actions/upload-artifact@v4.6.1
+        with:
+          name: 'benchmark-markdown'
+          path: ${{ env.Path_ArtifactsBenchmarking }}/${{ env.ArtifactBenchmarkingMarkdown }}
